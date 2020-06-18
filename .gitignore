@@ -5,3 +5,4 @@ __pycache__/
 .vscode/
 .flake8
 .log
+pickles.db
