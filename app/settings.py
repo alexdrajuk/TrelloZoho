@@ -1,5 +1,4 @@
 import os
-import re
 import logging
 import logging.config
 
@@ -22,13 +21,39 @@ ZOHO_CLIENT_ID = os.getenv('ZOHO_CLIENT_ID')
 ZOHO_CLIENT_SECRET = os.getenv('ZOHO_CLIENT_SECRET')
 ZOHO_REDIRECT_URI = os.getenv('ZOHO_REDIRECT_URI')
 
-accounts_regexes {
-    'Automobile Expense': (re.compile(), ),
-    'Meals and Entertainment': re.compile(),
-    'Leisure&Fun': re.compile(),
-    'Parking': re.compile(),
-    'Household': re.compile(),
-    'Health&Beauty': re.compile(),
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+DIALOGFLOW_SESSION_ID = os.getenv('DIALOGFLOW_SESSION_ID')
+
+ENTITIES_DIVISOR = '::'
+EXCHANGE_PREFIX = 'exchange'
+TRANSFER_PREFIX = 'transfer'
+CARD_PREFIXES = ('ukrsib', 'ukrsib', 'укрсиб', 'укрсибб')
+
+EXPENSE_ACCOUNTS = {
+    'automobile': 'Automobile Expense',
+    'clothes': 'Clothes',
+    'charity': 'Charity',
+    'entertainment': 'Meals and Entertainment',
+    'family': 'family',
+    'fuel': 'Fuel/Mileage Expenses',
+    'gifts': 'Gifts',
+    'gift': 'Gifts',
+    'health': 'Health&Beauty',
+    'household': 'Household',
+    'house': 'Household',
+    'it': 'IT and Internet Expenses',
+    'internet': 'IT and Internet Expenses',
+    'leisure': 'Leisure&Fun',
+    'meals': 'Meals and Entertainment',
+    'parking': 'Parking',
+    'rent': 'Rent Expense',
+    'Repairs and Maintenance': 'Repairs and Maintenance',
+    'self': 'Self Development',
+    'self dev': 'Self Development',
+    'selfdev': 'Self Development',
+    'taxi': 'Taxi',
+    'th': 'TH',
+    'tips': 'Tips expense',
 }
 
 
