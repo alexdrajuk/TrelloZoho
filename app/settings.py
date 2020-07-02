@@ -26,8 +26,22 @@ DIALOGFLOW_SESSION_ID = os.getenv('DIALOGFLOW_SESSION_ID')
 
 ENTITIES_DIVISOR = '::'
 EXCHANGE_PREFIX = 'exchange'
+EXCHANGE_CURRENCIES = {'$': 'usd', 'e': 'eur', 'eur': 'eur', 'uah': 'uah'}
 TRANSFER_PREFIX = 'transfer'
 CARD_PREFIXES = ('ukrsib', 'ukrsib', 'укрсиб', 'укрсибб')
+DEFAULT_CURRENCY = 'uah'
+
+ACCOUNTS_BY_CURRENCY_KS = {
+    'uah': 'CASH UAH - KS',
+    'eur': 'CASH EUR - KS',
+    'usd': 'CASH USD - KS',
+}
+
+ACCOUNTS_BY_CURRENCY_ASSIST = {
+    'uah': 'CASH UAH - Anna',
+    'eur': 'CASH EUR - Anna',
+    'usd': 'CASH USD - Anna',
+}
 
 EXPENSE_ACCOUNTS = {
     'automobile': 'Automobile Expense',

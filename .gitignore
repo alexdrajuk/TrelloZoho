@@ -3,6 +3,9 @@ env/
 __pycache__/
 .env
 .vscode/
+.idea/
 .flake8
 .log
 pickles.db
+logs.log
+db.json
