@@ -2,8 +2,8 @@ from datetime import datetime as dt
 
 import requests
 
-import settings
-import utils
+from zohotrello import settings
+from zohotrello import utils
 
 
 class TrelloAPI:
@@ -78,3 +78,18 @@ class TrelloAPI:
             dt.strptime(comment.get('date'), '%Y-%m-%dT%H:%M:%S.%fZ') > last_comment_date
         ]
         return new_comments
+
+
+
+# api_key = settings.TRELLO_API_KEY
+# api_token = settings.TRELLO_API_TOKEN
+# board_name = settings.TRELLO_BOARD_NAME
+# card_name = settings.TRELLO_CARD_NAME
+
+# trello_api = TrelloAPI(api_key, api_token)
+# card_id = trello_api.get_card_on_board_by_name(board_name, card_name).get('id')
+# print(card_id)
+# print(trello_api.get_card_comments(card_id))
+
+# trello_api.save_initial_comment_date(card_id)
+# print(trello_api.fetch_new_comments(board_name, card_name))

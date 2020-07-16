@@ -24,12 +24,14 @@ ZOHO_REDIRECT_URI = os.getenv('ZOHO_REDIRECT_URI')
 GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 DIALOGFLOW_SESSION_ID = os.getenv('DIALOGFLOW_SESSION_ID')
 
-ENTITIES_DIVISOR = '::'
+COMMENT_PARTS_DIVISOR = '::'
 EXCHANGE_PREFIX = 'exchange'
 EXCHANGE_CURRENCIES = {'$': 'usd', 'e': 'eur', 'eur': 'eur', 'uah': 'uah'}
 TRANSFER_PREFIX = 'transfer'
 CARD_PREFIXES = ('ukrsib', 'ukrsib', 'укрсиб', 'укрсибб')
 DEFAULT_CURRENCY = 'uah'
+
+ASSISTANT_NAME = 'Anna'
 
 ACCOUNTS_BY_CURRENCY_KS = {
     'uah': 'CASH UAH - KS',
@@ -38,9 +40,9 @@ ACCOUNTS_BY_CURRENCY_KS = {
 }
 
 ACCOUNTS_BY_CURRENCY_ASSIST = {
-    'uah': 'CASH UAH - Anna',
-    'eur': 'CASH EUR - Anna',
-    'usd': 'CASH USD - Anna',
+    'uah': 'KASSA UAH - Anna',
+    'eur': 'KASSA EUR - Anna',
+    'usd': 'KASSA USD - Anna',
 }
 
 EXPENSE_ACCOUNTS = {
@@ -77,7 +79,7 @@ log_config = {
         'fileHandler': {
             'class': 'logging.FileHandler',
             'formatter': 'commonFormatter',
-            'filename': 'logs.log',
+            'filename': '../logs.log',
         }
     },
     'formatters': {
