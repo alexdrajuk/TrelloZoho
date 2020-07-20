@@ -1,10 +1,14 @@
 import os
+import re
 import logging
 import logging.config
 
+from pytz import timezone
 from dotenv import load_dotenv
 
 load_dotenv()
+
+LOCAL_TZ = timezone('Europe/Kiev')
 
 TRELLO_API_KEY = os.getenv('TRELLO_API_KEY')
 TRELLO_API_TOKEN = os.getenv('TRELLO_API_TOKEN')
@@ -25,6 +29,7 @@ GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 DIALOGFLOW_SESSION_ID = os.getenv('DIALOGFLOW_SESSION_ID')
 
 COMMENT_PARTS_DIVISOR = '::'
+BALANCE_PREFIXES = ('o', 'bal', 'balance')
 EXCHANGE_PREFIX = 'exchange'
 EXCHANGE_CURRENCIES = {'$': 'usd', 'e': 'eur', 'eur': 'eur', 'uah': 'uah'}
 TRANSFER_PREFIX = 'transfer'
@@ -37,6 +42,7 @@ ACCOUNTS_BY_CURRENCY_KS = {
     'uah': 'CASH UAH - KS',
     'eur': 'CASH EUR - KS',
     'usd': 'CASH USD - KS',
+    'card': 'Ukrsibbank - UAH'
 }
 
 ACCOUNTS_BY_CURRENCY_ASSIST = {
@@ -70,7 +76,14 @@ EXPENSE_ACCOUNTS = {
     'taxi': 'Taxi',
     'th': 'TH',
     'tips': 'Tips expense',
+    'unknown': 'UNKNOWN',
 }
+
+COMMENT_PATTERNS = [
+    re.compile(r'^\w+?::\$?\d+::\w+?::\w+$', flags=re.IGNORECASE),
+    re.compile(r'^\w+?::\$?\d+::\w+$', flags=re.IGNORECASE),
+    re.compile(r'^\w+?::\$?\d+$', flags=re.IGNORECASE),
+]
 
 
 log_config = {

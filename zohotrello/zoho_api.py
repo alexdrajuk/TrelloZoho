@@ -19,19 +19,19 @@ class ZohoAPI:
         self.redirect_uri = redirect_uri
         self.refresh_token = refresh_token
         self.organization_id = organization_id
-        self._access_token = None
-        self._access_token_expires_at = None
+        self.__access_token = None
+        self.__access_token_expires_at = None
 
     @property
-    def access_token(self):
-        if self._access_token and self._access_token_expires_at and self._access_token_expires_at > dt.now():
-            return self._access_token
+    def zoho_access_token(self):
+        if self.__access_token and self.__access_token_expires_at and self.__access_token_expires_at > dt.now():
+            return self.__access_token
         self.refresh_access_token()
-        return self._access_token
+        return self.__access_token
 
-    @access_token.setter
-    def access_token(self, value):
-        self._access_token = value
+    @zoho_access_token.setter
+    def zoho_access_token(self, value):
+        self.__access_token = value
 
     def refresh_access_token(self):
         url = 'https://accounts.zoho.com/oauth/v2/token'
@@ -53,17 +53,17 @@ class ZohoAPI:
             logger.error(response.json().get('error'))
             raise Exception('Error during refresh_access_token')
 
-        expires_in = int(response.json().get('expires_in'))
+        expires_in = float(response.json().get('expires_in'))
         access_token = response.json().get('access_token')
 
-        self._access_token = access_token
+        self.zoho_access_token = access_token
         # Just for case it updates access_token five minutes before the expiration time
-        self.access_token_expires_at = dt.now() + timedelta(seconds=expires_in - 300)
+        self.__access_token_expires_at = dt.now() + timedelta(seconds=expires_in - 300)
 
     def get_currency_by_code(self, currency_code):
         url = "https://books.zoho.com/api/v3/settings/currencies"
         headers = {
-            'Authorization': f'Zoho-oauthtoken {self.access_token}',
+            'Authorization': f'Zoho-oauthtoken {self.zoho_access_token}',
             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         }
         query = {
@@ -79,7 +79,7 @@ class ZohoAPI:
     def fetch_accounts_list(self, only_active=True):
         url = 'https://books.zoho.com/api/v3/chartofaccounts'
         headers = {
-            'Authorization': f'Zoho-oauthtoken {self.access_token}',
+            'Authorization': f'Zoho-oauthtoken {self.zoho_access_token}',
             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         }
         query = {
@@ -96,7 +96,7 @@ class ZohoAPI:
     def fetch_bank_accounts(self, only_active=True):
         url = "https://books.zoho.com/api/v3/bankaccounts"
         headers = {
-            'Authorization': f'Zoho-oauthtoken {self.access_token}',
+            'Authorization': f'Zoho-oauthtoken {self.zoho_access_token}',
             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
         }
         query = {
@@ -105,7 +105,7 @@ class ZohoAPI:
         if only_active:
             query['filter_by'] = 'Status.Active'
 
-        response = requests.get(url, headers=headers, params=query, timeout=60)
+        response = requests.get(url, headers=headers, params=query, timeout=settings.REQUESTS_TIMEOUT)
         response.raise_for_status()
         if response.json().get('message') == 'success':
             return response.json().get('bankaccounts')
@@ -119,7 +119,7 @@ class ZohoAPI:
     def get_expense_account_by_name(self, account_name, only_active=True):
         url = "https://books.zoho.com/api/v3/chartofaccounts"
         headers = {
-            'Authorization': f'Zoho-oauthtoken {self.access_token}',
+            'Authorization': f'Zoho-oauthtoken {self.zoho_access_token}',
             'Content-Type': 'application/json',
         }
         query = {
@@ -140,16 +140,47 @@ class ZohoAPI:
             if account.get('account_name').lower() == account_name.lower():
                 return account
 
-    def create_bank_transaction(self, **kwargs):
-        url = "https://books.zoho.com/api/v3/banktransactions"
+    def get_account_details(self, account_id):
+        url = f"https://books.zoho.com/api/v3/bankaccounts/{account_id}"
         headers = {
-            'Authorization': f'Zoho-oauthtoken {self.access_token}',
+            'Authorization': f'Zoho-oauthtoken {self.zoho_access_token}',
             'Content-Type': 'application/json',
         }
         query = {
             'organization_id': self.organization_id,
         }
-        body = kwargs
+        response = requests.get(url, headers=headers, params=query, timeout=settings.REQUESTS_TIMEOUT)
+        response.raise_for_status()
+        if response.json().get('message') == 'success':
+            return response.json().get('bankaccount')
+
+    def get_balance(self, comment_text):
+        comment_entity = utils.extract_comment_entities(comment_text)
+        balance_for_account = None
+
+        if utils.is_paid_by_card(comment_text):
+            balance_for_account = settings.ACCOUNTS_BY_CURRENCY_KS.get('card')
+        
+        elif utils.is_usd_amount(comment_entity.get('expense_amount')):
+            balance_for_account = settings.ACCOUNTS_BY_CURRENCY_KS.get('usd')
+        
+        elif utils.is_eur_amount(comment_entity.get('expense_amount')):
+            balance_for_account = settings.ACCOUNTS_BY_CURRENCY_KS.get('eur')
+        else:
+            balance_for_account = settings.ACCOUNTS_BY_CURRENCY_KS.get('uah')
+
+        balance_for_account_id = self.get_bank_account_by_name(balance_for_account).get('account_id')
+        return self.get_account_details(balance_for_account_id).get('balance')
+        
+    def create_bank_transaction(self, **kwargs):
+        url = "https://books.zoho.com/api/v3/banktransactions"
+        headers = {
+            'Authorization': f'Zoho-oauthtoken {self.zoho_access_token}',
+            'Content-Type': 'application/json',
+        }
+        query = {
+            'organization_id': self.organization_id,
+        }
         response = requests.post(url, headers=headers, params=query, json=kwargs, timeout=settings.REQUESTS_TIMEOUT)
         response.raise_for_status()
         response_code = response.json().get('code')
@@ -169,13 +200,13 @@ class ZohoAPI:
             'transaction_type': 'transfer_fund',
             'amount': exchange_data.get('sell_amount'),
             'exchange_rate': round(exchange_data.get('sell_amount') / exchange_data.get('buy_amount'), 6),
-            'reference_number': 'API test'
+            'reference_number': exchange_data.get('reference_number')
         }
         self.create_bank_transaction(**transaction_data)
 
     def create_assistant_transaction(self, comment_text):
         expense_data = utils.extract_comment_entities(comment_text)
-        expense_amount = int(''.join(s for s in expense_data.get('expense_amount') if s.isnumeric()))
+        expense_amount = utils.clear_amount(expense_data.get('expense_amount'))
         account_from = None
         account_to = None
         currency_id = None
@@ -203,15 +234,64 @@ class ZohoAPI:
             'to_account_id': self.get_bank_account_by_name(account_to).get('account_id'),
             'transaction_type': 'transfer_fund',
             'amount': expense_amount,
-            'reference_number': 'API test',
+            'reference_number': expense_data.get('note'),
             'currency_id': currency_id
         }
         if expense_data.get('note'):
             transaction_data.update({'reference_number': expense_data.get('note')})
-        pprint(transaction_data)
+
         self.create_bank_transaction(**transaction_data)
 
+    def create_expense_transaction(self, **transaction_data):
+        url = "https://books.zoho.com/api/v3/expenses"
+        headers = {
+            'Authorization': f'Zoho-oauthtoken {self.zoho_access_token}',
+            'Content-Type': 'application/json',
+        }
+        query = {
+            'organization_id': self.organization_id,
+        }
+        response = requests.post(url, headers=headers, params=query, json=transaction_data, timeout=settings.REQUESTS_TIMEOUT)
+        response.raise_for_status()
+        response_code = response.json().get('code')
+        if response_code and response_code != 0:
+            logger.error(f"code: {response_code} - {response.json().get('message')}")
+            raise Exception('The expense transaction has not been recorded.')
 
+    def create_expense_record(self, comment_text):
+        expense_data = utils.extract_comment_entities(comment_text)
+        expense_amount = utils.clear_amount(expense_data.get('expense_amount'))
+        # TODO проверить на наличие указанного аккаунта, в случае отсутствия аккаунта выбросить исключение
+        expense_for_account = settings.EXPENSE_ACCOUNTS.get(expense_data.get('expense_account').lower(), 'unknown')
+        paid_through_account = None
+        currency_id = None
+
+        if utils.is_usd_amount(expense_data.get('expense_amount')):
+            paid_through_account = settings.ACCOUNTS_BY_CURRENCY_KS.get('usd')
+            currency_id = self.get_currency_by_code('usd').get('currency_id')
+
+        elif utils.is_eur_amount(expense_data.get('expense_amount')):
+            paid_through_account = settings.ACCOUNTS_BY_CURRENCY_KS.get('eur')
+            currency_id = self.get_currency_by_code('eur').get('currency_id')
+
+        elif utils.is_paid_by_card(comment_text):
+            paid_through_account = settings.ACCOUNTS_BY_CURRENCY_KS.get('card')
+            currency_id = self.get_currency_by_code('uah').get('currency_id')
+
+        else:
+            paid_through_account = settings.ACCOUNTS_BY_CURRENCY_KS.get('uah')
+            currency_id = self.get_currency_by_code('uah').get('currency_id')
+
+        # TODO Add date from trello_comment
+        expense_record_data = {
+            'account_id': self.get_expense_account_by_name(expense_for_account).get('account_id'),
+            'date': dt.now(tz=settings.LOCAL_TZ).strftime('%Y-%m-%d'),
+            'amount': expense_amount,
+            'paid_through_account_id': self.get_bank_account_by_name(paid_through_account).get('account_id'),
+            'currency_id': currency_id,
+            'reference_number': expense_data.get('note', ''),
+        }
+        self.create_expense_transaction(**expense_record_data)
 
 
 
@@ -222,7 +302,7 @@ refresh_token = settings.ZOHO_REFRESH_TOKEN
 organization_id = settings.ZOHO_ORGANIZATION_ID
 
 
-# zoho_api = ZohoAPI(client_id, client_secret, redirect_uri, refresh_token, organization_id)
+zoho_api = ZohoAPI(client_id, client_secret, redirect_uri, refresh_token, organization_id)
 # account = zoho_api.get_bank_account_by_name(settings.ACCOUNTS_BY_CURRENCY_KS.get('usd'))
 
 
@@ -241,3 +321,10 @@ organization_id = settings.ZOHO_ORGANIZATION_ID
 
 # comment_text = comment.get('data').get('text')
 # zoho_api.create_exchange_transaction('exchange::$100-2000')
+# zoho_api.create_expense_record('family::200::Жанне (API test)')
+# zoho_api.create_expense_record('household::400::ukrsib::Дина')
+# zoho_api.create_expense_record('household::$200::Cleaning (API test)')
+# zoho_api.create_expense_record('family::$100::something (API test)')
+# zoho_api.create_expense_record('unknown::$150')
+# zoho_api.create_expense_record('unknown::4242')
+# zoho_api.create_expense_record('unknown::4242eur')
